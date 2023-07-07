@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<ruleset name="Multi_Tenant_Custom_Standard">
+    <description>Multi-Tenant custom coding standard.</description>
+    <rule ref="PEAR">
+        <exclude name="PEAR.Commenting.FunctionComment.MissingParamComment"/>
+        <exclude name="PEAR.NamingConventions.ValidVariableName.PrivateNoUnderscore"/>
+        <exclude name="PEAR.NamingConventions.ValidFunctionName.PrivateNoUnderscore"/>
+    </rule>
+</ruleset>
