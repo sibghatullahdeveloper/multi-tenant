@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# run unit test, 1: true 0: false
+RUN_UNITTEST=0
+
+# run code sniffer, 1: true 0: false
+RUN_SNIFFER=1
+
+if [ ${RUN_UNITTEST} -eq 1 ]; then
+
+    echo "/**********************************************************************/"
+    echo "/*                       Running unit tests...                        */"
+    echo "/**********************************************************************/"
+    php=`which php`
+    unitTestPath='tests'
+    #phpunitCmd="./vendor/bin/phpunit --configuration ${unitTestPath}/phpunit.xml --filter testAbs ${unitTestPath}/API/MyTest.php"
+    phpunitCmd="./vendor/bin/phpunit --configuration ${unitTestPath}/phpunit.xml"
+
+    (${php} ${phpunitCmd})
+    returnCode=$?
+
+    # if unit tests fail, output a summary and exit with failure code.
+    if [ $returnCode -ne 0 ]; then
+        # abort the commit.
+        echo
+        echo "Unit test FAILURES! Please fix it before commit."
+        echo "------------------------------------------------------------------------"
+        echo
+        exit $returnCode
+    else
+    echo "All tests passed."
+    echo "Proceeding with commit. Continue..."
+    echo
+    fi
+fi
+
+PHPCS=./vendor/bin/phpcs
+
+if [ ${RUN_SNIFFER} -eq 1 -a -e ${PHPCS} ]; then
+    PROJECT=`php -r "echo dirname(dirname(dirname(realpath('$0'))));"`
+    FILES=`git status -s | awk '$1 != "R" && $1 != "D" { print $2 }' | grep \\.php$ | grep -v database/ | grep -v resources/ | grep -v routes/ | grep -v app/Http/Kernel.php | grep -v contrib/ | grep -v app/Helpers/ | grep -v tests/ | grep -v config/ | grep -v public/`
+    flag=0
+
+    if [ "$FILES" != "" ]
+        then
+            echo "/**********************************************************************/"
+            echo "/*                          Running Code Sniffer...                   */"
+            echo "/**********************************************************************/"
+            # By default, PHP_CodeSniffer will use the PEAR coding standard if no standard is supplied on the command line.
+            # https://github.com/squizlabs/PHP_CodeSniffer/wiki/Configuration-Options
+
+            # Got the message like that "PHPCBF CAN FIX THE 1 MARKED SNIFF VIOLATIONS AUTOMATICALLY"
+            # Check https://github.com/squizlabs/PHP_CodeSniffer/wiki/Fixing-Errors-Automatically
+
+            #./vendor/bin/phpcs --standard=PSR2 --encoding=utf-8 -n -p $FILES
+            #./vendor/bin/phpcs  --standard=PEAR --encoding=utf-8 -n -p $FILES
+            # using the config file phpcs.xml if the standard parameter doesn't provided
+            ${PHPCS}  --encoding=utf-8 -n -p -s $FILES
+            if [ $? != 0 ]
+            then
+                echo "Please fix the error before commit."
+                echo "------------------------------------------------------------------------"
+                exit 1
+            fi
+        fi
+    echo "All passed. Processing with commit."
+    echo
+    exit $?
+fi
+
+exit 0
